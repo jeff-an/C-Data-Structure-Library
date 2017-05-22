@@ -1,0 +1,10 @@
+struct hashImpl;
+typedef struct hashImpl *Hash;
+void freeHash(Hash h);
+struct Node;
+typedef struct Node *node;
+Hash newHash();
+void static freeList(node ptr);
+static node cons(char *str, int data, int hashCode, node cdr);
+void add(Hash h, char *str, int data);
+int retrieve(Hash h, char *str);
