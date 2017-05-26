@@ -7,3 +7,4 @@ int getCapacity(Heap h);
 static Heap init(int *arr, int cap);
 int getHeight(Heap h);
 void printHeap(Heap h);
+void insert(Heap h, int num);

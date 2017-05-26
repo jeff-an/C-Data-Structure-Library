@@ -9,6 +9,7 @@
 /* floor(log(index)) is the height of a node at a certain array index.
 /* We define the height of the root as zero.
 **/
+
 struct heap {
     int count;
     int *array;
@@ -99,6 +100,37 @@ Heap heapify(int *nums, int length) {
     return init(array, length);
 }
 
+void insert(Heap h, int num) {
+    int *array = h -> array;
+    int length = h -> count;
+    if (h -> cap == length) {
+        realloc(h -> array, 2 * sizeof(int) * h -> cap);
+        h -> cap *= 2;
+    }
+    array[length] = num;
+    int child = length;
+    int parent = child % 2 == 0 ? (child - 2) / 2 : (child - 1) / 2;
+    printf("child: %d, parent: %d\n", child, parent);
+    while (!(array[child] <= array[parent])) {
+        if (parent == 0) {
+            if (array[0] < array[child]) {
+                int temp = array[0];
+                array[0] = array[child];
+                array[child] = temp;
+                break;
+            }
+        } else {
+            int temp = array[parent];
+            array[parent] = array[child];
+            array[child] = temp;
+            child = parent;
+            parent = parent % 2 == 0 ? (parent - 2) / 2 : (parent - 1) / 2;
+        }
+    }
+    ++(h -> count);
+    return;
+}
+
 // Utility Functions
 void printHeap(Heap h) {
     if (h -> count == 0) {
@@ -144,8 +176,21 @@ int getCapacity(Heap h) {
 
 /** Driver program for debugging/demo purposes
 int main() {
+    /** Heapify test
     int array[] = {4, 2, 1, 5, 20, -1, 0, 9, 7, 8, 10, 30, 40};
     Heap h = heapify(array, sizeof(array) / sizeof(int));
     printHeap(h);
+
+
+    /** Insert test
+    Heap h = emptyHeap(100);
+    insert(h, 1);
+    insert(h, 2);
+    insert(h, 3);
+    insert(h, 4);
+    insert(h, -1);
+    insert(h, 0);
+    printHeap(h);
+
     return 0;
-} **/
+}  **/
