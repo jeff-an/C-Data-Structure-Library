@@ -264,6 +264,17 @@ int getCapacity(Heap h) {
     return h -> cap;
 }
 
+// Frees all shallow copies of the heap as well
+void freeHeap(Heap h) {
+    free(h -> array);
+    Heap *arr = h -> cpys;
+    for (int i = 0; i < h -> cpyCount; ++i) {
+        free(arr[i]);
+    }
+    free(arr);
+    return;
+}
+
 /** Driver program for debugging/demo purposes
 int main() {
     // Heapify test

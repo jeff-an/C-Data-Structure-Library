@@ -9,3 +9,7 @@ int getHeight(Heap h);
 void printHeap(Heap h);
 int insert(Heap h, int num);
 int deleteMax(Heap h);
+Heap shallowCopy(Heap h);
+Heap deepCopy(Heap h);
+int findMax(Heap h);
+void freeHeap(Heap h);
