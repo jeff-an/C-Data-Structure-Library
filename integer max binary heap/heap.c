@@ -14,6 +14,8 @@ struct heap {
     int count;
     int *array;
     int cap;
+    struct heap **cpys;
+    int cpyCount;
 };
 
 // Creates an empty heap with capacity equal to cap
@@ -27,6 +29,9 @@ Heap emptyHeap(int cap) {
     newHeap -> count = 0;
     newHeap -> array = array;
     newHeap -> cap = cap;
+    newHeap -> cpyCount = 1;
+    newHeap -> cpys = malloc(100 * sizeof(Heap));
+    (newHeap -> cpys)[0] = newHeap;
     return newHeap;
 }
 
@@ -35,6 +40,9 @@ static Heap init(int *arr, int cap) {
     h -> count = cap;
     h -> cap = cap;
     h -> array = arr;
+    h -> cpyCount = 1;
+    h -> cpys = malloc(100 * sizeof(Heap));
+    (h -> cpys)[0] = h;
     return h;
 }
 
@@ -110,7 +118,10 @@ int insert(Heap h, int num) {
             printf("Error: cannot insert element, too many elements in heap!");
             return -1;
         }
-        h -> cap *= 2;
+        // Update cap on all shallow copies
+        for (int i = 0; i < h -> cpyCount; ++i) {
+            ((h -> cpys)[i]) -> cap *= 2;
+        }
     }
     array[length] = num;
     int child = length;
@@ -132,8 +143,11 @@ int insert(Heap h, int num) {
             parent = parent % 2 == 0 ? (parent - 2) / 2 : (parent - 1) / 2;
         }
     }
-    // Update the count
-    return ++(h -> count);
+    // Update the count on all shallow copies
+    for (int i = 0; i < h -> cpyCount; ++i) {
+        ++((h -> cpys)[i] -> count);
+    }
+    return h -> count;
 }
 
 int findMax(Heap h) {
@@ -172,7 +186,39 @@ int deleteMax(Heap h) {
         temp = toBeTemp;
         child = parent;
     }
-    return --(h -> count);
+    // Update count on all shallow copies
+    for (int i = 0; i < h -> cpyCount; ++i) {
+        --((h -> cpys)[i] -> count);
+    }
+    return h -> count;
+}
+
+// WARNING: Shallow copies of heaps autoupdate cap and length
+Heap shallowCopy(Heap h) {
+    if (h -> cpyCount >= 100) {
+        printf("Error: too many shallow copies created!");
+        exit(-1);
+    }
+
+    Heap newHeap = malloc(sizeof(struct heap));
+    newHeap -> cap = h -> cap;
+    newHeap -> count = h -> count;
+    newHeap -> array = h -> array;
+    newHeap -> cpyCount = ++(h -> cpyCount);
+    newHeap -> cpys = h -> cpys;
+    (h -> cpys)[h -> cpyCount - 1] = newHeap;
+
+    return newHeap;
+}
+
+Heap deepCopy(Heap h) {
+    Heap newHeap = malloc(sizeof(struct heap));
+    int *array = malloc((h -> cap) * sizeof(int));
+    memcpy(array, h -> array, (h -> cap) * sizeof(int));
+    newHeap -> count = h -> count;
+    newHeap -> cap = h -> cap;
+    newHeap -> array = array;
+    return newHeap;
 }
 
 // Utility Functions
@@ -239,6 +285,14 @@ int main() {
     printHeap(h1);
     deleteMax(h1);
     printHeap(h1);
+
+    // Copy test
+    Heap h2 = shallowCopy(h1);
+    Heap h3 = deepCopy(h1);
+    deleteMax(h1);
+    printHeap(h2);
+    printHeap(h1);
+    printHeap(h3);
 
     return 0;
 } **/
