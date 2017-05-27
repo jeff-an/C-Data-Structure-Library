@@ -100,17 +100,22 @@ Heap heapify(int *nums, int length) {
     return init(array, length);
 }
 
-void insert(Heap h, int num) {
+int insert(Heap h, int num) {
     int *array = h -> array;
     int length = h -> count;
+    // Reallocate extra memory if needed
     if (h -> cap == length) {
-        realloc(h -> array, 2 * sizeof(int) * h -> cap);
+        int *result = realloc(h -> array, 2 * sizeof(int) * h -> cap);
+        if (!result) {
+            printf("Error: cannot insert element, too many elements in heap!");
+            return -1;
+        }
         h -> cap *= 2;
     }
     array[length] = num;
     int child = length;
     int parent = child % 2 == 0 ? (child - 2) / 2 : (child - 1) / 2;
-    printf("child: %d, parent: %d\n", child, parent);
+    // Trickle upwards to update parent nodes if needed
     while (!(array[child] <= array[parent])) {
         if (parent == 0) {
             if (array[0] < array[child]) {
@@ -127,8 +132,47 @@ void insert(Heap h, int num) {
             parent = parent % 2 == 0 ? (parent - 2) / 2 : (parent - 1) / 2;
         }
     }
-    ++(h -> count);
-    return;
+    // Update the count
+    return ++(h -> count);
+}
+
+int findMax(Heap h) {
+    return (h -> array)[0];
+}
+
+int deleteMax(Heap h) {
+    int *array = h -> array;
+    int last = (h -> count) - 1;
+    int child = last % 2 == 0 ? (last - 2) / 2 : (last - 1) / 2;
+    int temp = array[child];
+
+    // Bottom row
+    if (last % 2 == 0) {
+        array[child] = array[last] > array[last - 1] ? array[last] : array[last - 1];
+        // If the final subtree is complete, we may need to copy the right child onto the left child
+        array[last - 1] = array[array[last - 1] >= array[last] ? last : last - 1];
+    } else {
+        array[child] = array[last];
+    }
+
+    // Start at the right-most leaves and push the maximum upwards
+    // If one child is greater than other, swap and push the larger child to the parent position
+    while (1) {
+        if (child == 1 || child == 2) {
+            int otherChild = child % 2 == 0 ? child - 1 : child + 1;
+            array[0] = temp > array[otherChild] ? temp : array[otherChild];
+            array[otherChild] = array[otherChild] >= temp ? temp : array[otherChild];
+            break;
+        }
+        int otherChild = child % 2 == 0 ? child - 1 : child + 1;
+        int parent = child % 2 == 0 ? (child - 2) / 2 : (child - 1) / 2;
+        int toBeTemp = array[parent];
+        array[parent] = temp > array[otherChild] ? temp : array[otherChild];
+        array[otherChild] = array[otherChild] >= temp ? temp : array[otherChild];
+        temp = toBeTemp;
+        child = parent;
+    }
+    return --(h -> count);
 }
 
 // Utility Functions
@@ -176,21 +220,25 @@ int getCapacity(Heap h) {
 
 /** Driver program for debugging/demo purposes
 int main() {
-    /** Heapify test
+    // Heapify test
     int array[] = {4, 2, 1, 5, 20, -1, 0, 9, 7, 8, 10, 30, 40};
     Heap h = heapify(array, sizeof(array) / sizeof(int));
     printHeap(h);
-
-
-    /** Insert test
-    Heap h = emptyHeap(100);
-    insert(h, 1);
-    insert(h, 2);
-    insert(h, 3);
-    insert(h, 4);
-    insert(h, -1);
-    insert(h, 0);
     printHeap(h);
 
+    // Insert and delete test
+    Heap h1 = emptyHeap(100);
+    insert(h1, -50);
+    insert(h1, 5);
+    insert(h1, 4);
+    insert(h1, 70);
+    insert(h1, 100);
+    insert(h1, 0);
+    insert(h1, 2);
+    insert(h1, 99);
+    printHeap(h1);
+    deleteMax(h1);
+    printHeap(h1);
+
     return 0;
-}  **/
+} **/
