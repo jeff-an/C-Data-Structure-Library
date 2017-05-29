@@ -8,3 +8,5 @@ void static freeList(node ptr);
 static node cons(char *str, int data, int hashCode, node cdr);
 void add(Hash h, char *str, int data);
 int retrieve(Hash h, char *str);
+void delete(Hash h, char *str);
+static node deleteImpl(node lst, char *str);
