@@ -3,6 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include "heap.h"
+#include "../string hash map adt/hash.h"
 
 /** Array representation of a heap where the root is the first node (node 1),
 /* index 2n is a right child node and index 2n + 1 is a left child node.
@@ -16,6 +17,7 @@ struct heap {
     int cap;
     struct heap **cpys;
     int cpyCount;
+    Hash keys;
 };
 
 // Creates an empty heap with capacity equal to cap
@@ -32,6 +34,7 @@ Heap emptyHeap(int cap) {
     newHeap -> cpyCount = 1;
     newHeap -> cpys = malloc(100 * sizeof(Heap));
     (newHeap -> cpys)[0] = newHeap;
+    newHeap -> keys = newHash();
     return newHeap;
 }
 
@@ -43,6 +46,13 @@ static Heap init(int *arr, int cap) {
     h -> cpyCount = 1;
     h -> cpys = malloc(100 * sizeof(Heap));
     (h -> cpys)[0] = h;
+    h -> keys = newHash();
+    for (int i = 0; i < cap; ++i) {
+        char *buffer = malloc(10 * sizeof(char));
+        memset(buffer, 0, 10 * sizeof(char));
+        itoa(arr[i], buffer, 10);
+        add(h -> keys, buffer, i);
+    }
     return h;
 }
 
@@ -124,6 +134,7 @@ int insert(Heap h, int num) {
         }
     }
     array[length] = num;
+    updateMap(h, length);
     int child = length;
     int parent = child % 2 == 0 ? (child - 2) / 2 : (child - 1) / 2;
     // Trickle upwards to update parent nodes if needed
@@ -133,12 +144,16 @@ int insert(Heap h, int num) {
                 int temp = array[0];
                 array[0] = array[child];
                 array[child] = temp;
+                updateMap(h, 0);
+                updateMap(h, child);
                 break;
             }
         } else {
             int temp = array[parent];
             array[parent] = array[child];
             array[child] = temp;
+            updateMap(h, parent);
+            updateMap(h, child);
             child = parent;
             parent = parent % 2 == 0 ? (parent - 2) / 2 : (parent - 1) / 2;
         }
@@ -154,6 +169,21 @@ int findMax(Heap h) {
     return (h -> array)[0];
 }
 
+static void updateMap(Heap h, int index) {
+    char *buffer = malloc(10 * sizeof(char));
+    memset(buffer, 0, 10 * sizeof(char));
+    itoa((h -> array)[index], buffer, 10);
+    add(h -> keys, buffer, index);
+    return;
+}
+
+static void deleteFromMap(Heap h, int index) {
+    char buffer[10];
+    itoa((h -> array)[index], buffer, 10);
+    delete(h -> keys, buffer);
+    return;
+}
+
 int deleteMax(Heap h) {
     int *array = h -> array;
     int last = (h -> count) - 1;
@@ -165,8 +195,11 @@ int deleteMax(Heap h) {
         array[child] = array[last] > array[last - 1] ? array[last] : array[last - 1];
         // If the final subtree is complete, we may need to copy the right child onto the left child
         array[last - 1] = array[array[last - 1] >= array[last] ? last : last - 1];
+        updateMap(h, last - 1);
+        updateMap(h, child);
     } else {
         array[child] = array[last];
+        updateMap(h, child);
     }
 
     // Start at the right-most leaves and push the maximum upwards
@@ -176,6 +209,9 @@ int deleteMax(Heap h) {
             int otherChild = child % 2 == 0 ? child - 1 : child + 1;
             array[0] = temp > array[otherChild] ? temp : array[otherChild];
             array[otherChild] = array[otherChild] >= temp ? temp : array[otherChild];
+            deleteFromMap(h, 0);
+            updateMap(h, 0);
+            updateMap(h, otherChild);
             break;
         }
         int otherChild = child % 2 == 0 ? child - 1 : child + 1;
@@ -183,6 +219,8 @@ int deleteMax(Heap h) {
         int toBeTemp = array[parent];
         array[parent] = temp > array[otherChild] ? temp : array[otherChild];
         array[otherChild] = array[otherChild] >= temp ? temp : array[otherChild];
+        updateMap(h, parent);
+        updateMap(h, otherChild);
         temp = toBeTemp;
         child = parent;
     }
@@ -199,18 +237,19 @@ Heap shallowCopy(Heap h) {
         printf("Error: too many shallow copies created!");
         exit(-1);
     }
-
     Heap newHeap = malloc(sizeof(struct heap));
     newHeap -> cap = h -> cap;
     newHeap -> count = h -> count;
     newHeap -> array = h -> array;
     newHeap -> cpyCount = ++(h -> cpyCount);
     newHeap -> cpys = h -> cpys;
+    newHeap -> keys = h -> keys;
     (h -> cpys)[h -> cpyCount - 1] = newHeap;
 
     return newHeap;
 }
 
+// TODO: implement fresh copy for hash
 Heap deepCopy(Heap h) {
     Heap newHeap = malloc(sizeof(struct heap));
     int *array = malloc((h -> cap) * sizeof(int));
@@ -267,20 +306,31 @@ int getCapacity(Heap h) {
 // Frees all shallow copies of the heap as well
 void freeHeap(Heap h) {
     free(h -> array);
+    Hash map = h -> keys;
     Heap *arr = h -> cpys;
     for (int i = 0; i < h -> cpyCount; ++i) {
         free(arr[i]);
     }
     free(arr);
+    freeHash(map);
     return;
+}
+
+static int indexOf(Heap h, int key) {
+    char *buffer = malloc(10 * sizeof(char));
+    memset(buffer, 0, 10 * sizeof(char));
+    itoa(key, buffer, 10);
+    return retrieve(h -> keys, buffer);
 }
 
 /** Driver program for debugging/demo purposes
 int main() {
-    // Heapify test
-    int array[] = {4, 2, 1, 5, 20, -1, 0, 9, 7, 8, 10, 30, 40};
+    // Heapify and indexing test
+    int array[] = {4, 2, 1, 6, 0, 20, -1, 9, 7, 8, 10, 30, 40};
     Heap h = heapify(array, sizeof(array) / sizeof(int));
-    printHeap(h);
+    for (int i = 0; i < 13; ++i) {
+        printf("%d should be %d\n", array[i], (h -> array)[indexOf(h, array[i])]);
+    }
     printHeap(h);
 
     // Insert and delete test

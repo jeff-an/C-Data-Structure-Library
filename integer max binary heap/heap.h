@@ -13,3 +13,6 @@ Heap shallowCopy(Heap h);
 Heap deepCopy(Heap h);
 int findMax(Heap h);
 void freeHeap(Heap h);
+static void deleteFromMap(Heap h, int index);
+static void updateMap(Heap h, int index);
+static int indexOf(Heap h, int key);
